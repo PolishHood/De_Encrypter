@@ -22,10 +22,12 @@ Builder.load_string("""
         rows: 6
         Button:
             text: 'Ceasar Cipher'
+            on_press: root.cipher_c()
             on_press: root.manager.current = 'cshift'
         Button:
-            text: 'WIP'
-            on_press:
+            text: 'Autokey'
+            on_press: root.cipher_ak()
+            on_press: root.manager.current = 'autokey'
         Button:
             text: 'WIP'
             on_press:
@@ -174,6 +176,17 @@ Builder.load_string("""
             on_press: root.false()
             on_press: root.manager.current = 'menu'
 
+<AutoKeyScreen>:
+    on_enter: akey.text = 'Enter key'
+    GridLayout:
+        rows: 2
+        TextInput:
+            id: akey
+        Button:
+            text: 'OK'
+            on_press: root.submit_ak()
+            on_press: root.manager.current = 'menu'
+
 <MenuScreen>:
     GridLayout:
         rows: 5
@@ -230,7 +243,14 @@ Builder.load_string("""
 """)
 
 class SelectingCipherScreen(Screen):
-    pass
+
+    def cipher_c(self):
+        global cipher
+        cipher = 1
+
+    def cipher_ak(self):
+        global cipher
+        cipher = 2
 
 class CShiftScreen(Screen):
 
@@ -340,14 +360,25 @@ class KeepPunctScreen(Screen):
         global bl
         bl = False
 
+class AutoKeyScreen(Screen):
+
+    def submit_ak(self):
+        global ak
+        ak = self.ids.akey.text
+
 class MenuScreen(Screen):
     pass
 
 class EncryptScreen(Screen):
 
     def encryption(self, text):
-        plaintext = self.ids.ptext.text
-        self.ids.ptext.text = pycipher.Caesar(cshift).encipher(plaintext, keep_punct=bl)
+        if cipher == 1:
+            plaintext = self.ids.ptext.text
+            self.ids.ptext.text = pycipher.Caesar(cshift).encipher(plaintext, keep_punct=bl)
+
+        elif cipher == 2:
+            plaintext = self.ids.ptext.text
+            self.ids.ptext.text = pycipher.Autokey(ak).encipher(plaintext)
 
     def copy(self):
         copied = self.ids.ptext.text
@@ -356,18 +387,21 @@ class EncryptScreen(Screen):
 class DecryptScreen(Screen):
 
     def decryption(self, text):
-        ciphertext = self.ids.dtext.text
-        self.ids.dtext.text = pycipher.Caesar(cshift).decipher(ciphertext, keep_punct=bl)
+        if cipher == 1:
+            ciphertext = self.ids.dtext.text
+            self.ids.dtext.text = pycipher.Caesar(cshift).decipher(ciphertext, keep_punct=bl)
+
+        elif cipher == 2:
+            ciphertext = self.ids.dtext.text
+            self.ids.dtext.text = pycipher.Autokey(ak).decipher(ciphertext)
 
     def copy(self):
         copied = self.ids.dtext.text
         clipboard.copy(copied)
 
-def exit():
-    sys.exit()
-
 sm = ScreenManager()
 sm.add_widget(SelectingCipherScreen(name='selcipher'))
+sm.add_widget(AutoKeyScreen(name='autokey'))
 sm.add_widget(CShiftScreen(name='cshift'))
 sm.add_widget(KeepPunctScreen(name='keep_punct'))
 sm.add_widget(MenuScreen(name='menu'))
