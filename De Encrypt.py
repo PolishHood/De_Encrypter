@@ -4,7 +4,8 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
 from kivy.uix.anchorlayout import AnchorLayout
-import sys
+import string
+import random
 import pycipher
 import clipboard
 
@@ -21,19 +22,21 @@ Builder.load_string("""
     GridLayout:
         rows: 6
         Button:
-            text: 'Ceasar Cipher'
+            text: 'Ceasar'
             on_press: root.cipher_c()
             on_press: root.manager.current = 'cshift'
         Button:
             text: 'Autokey'
             on_press: root.cipher_ak()
-            on_press: root.manager.current = 'autokey'
+            on_press: root.manager.current = 'key'
         Button:
-            text: 'WIP'
-            on_press:
+            text: 'Vigenere'
+            on_press: root.cipher_vg()
+            on_press: root.manager.current = 'key'
         Button:
-            text: 'WIP'
-            on_press:
+            text: 'Playfair'
+            on_press: root.cipher_pf()
+            on_press: root.manager.current = 'playfair'
         Button:
             text: 'WIP'
             on_press:
@@ -184,7 +187,25 @@ Builder.load_string("""
             id: akey
         Button:
             text: 'OK'
-            on_press: root.submit_ak()
+            on_press: root.submit_k()
+            on_press: root.manager.current = 'menu'
+
+<PlayFairKeyScreen>:
+    on_enter: randomkey.text = 'Generate key'
+    GridLayout:
+        rows: 4
+        TextInput:
+            id: randomkey
+            readonly: True
+        Button:
+            text: 'Generate key'
+            on_press: root.randomkey()
+        Button:
+            text: 'Copy'
+            on_press: root.copy()
+        Button:
+            text: 'OK'
+            on_press: root.submit_k()
             on_press: root.manager.current = 'menu'
 
 <MenuScreen>:
@@ -251,6 +272,14 @@ class SelectingCipherScreen(Screen):
     def cipher_ak(self):
         global cipher
         cipher = 2
+
+    def cipher_vg(self):
+        global cipher
+        cipher = 3
+
+    def cipher_pf(self):
+        global cipher
+        cipher = 4
 
 class CShiftScreen(Screen):
 
@@ -362,9 +391,26 @@ class KeepPunctScreen(Screen):
 
 class AutoKeyScreen(Screen):
 
-    def submit_ak(self):
-        global ak
-        ak = self.ids.akey.text
+    def submit_k(self):
+        global k
+        k = self.ids.akey.text
+
+class PlayFairKeyScreen(Screen):
+
+    def randomkey(self):
+        all_chars = list(string.ascii_lowercase)
+        random.shuffle(all_chars)
+        global randomkey
+        randomkey = ''.join(all_chars[:25])
+        self.ids.randomkey.text = randomkey
+
+    def submit_k(self):
+        global k
+        k = str(self.ids.randomkey.text)
+
+    def copy(self):
+        copied = self.ids.randomkey.text
+        clipboard.copy(copied)
 
 class MenuScreen(Screen):
     pass
@@ -378,7 +424,15 @@ class EncryptScreen(Screen):
 
         elif cipher == 2:
             plaintext = self.ids.ptext.text
-            self.ids.ptext.text = pycipher.Autokey(ak).encipher(plaintext)
+            self.ids.ptext.text = pycipher.Autokey(k).encipher(plaintext)
+
+        elif cipher == 3:
+            plaintext = self.ids.ptext.text
+            self.ids.ptext.text = pycipher.Vigenere(k).encipher(plaintext)
+
+        elif cipher == 4:
+            plaintext = self.ids.ptext.text
+            self.ids.ptext.text = pycipher.Playfair(k).encipher(plaintext)
 
     def copy(self):
         copied = self.ids.ptext.text
@@ -393,7 +447,16 @@ class DecryptScreen(Screen):
 
         elif cipher == 2:
             ciphertext = self.ids.dtext.text
-            self.ids.dtext.text = pycipher.Autokey(ak).decipher(ciphertext)
+            self.ids.dtext.text = pycipher.Autokey(k).decipher(ciphertext)
+
+        elif cipher == 3:
+            ciphertext = self.ids.dtext.text
+            self.ids.dtext.text = pycipher.Vigenere(k).decipher(ciphertext)
+
+        elif cipher == 4:
+            ciphertext = self.ids.dtext.text
+            self.ids.dtext.text = pycipher.Playfair(k).decipher(ciphertext)
+
 
     def copy(self):
         copied = self.ids.dtext.text
@@ -401,9 +464,10 @@ class DecryptScreen(Screen):
 
 sm = ScreenManager()
 sm.add_widget(SelectingCipherScreen(name='selcipher'))
-sm.add_widget(AutoKeyScreen(name='autokey'))
+sm.add_widget(AutoKeyScreen(name='key'))
 sm.add_widget(CShiftScreen(name='cshift'))
 sm.add_widget(KeepPunctScreen(name='keep_punct'))
+sm.add_widget(PlayFairKeyScreen(name='playfair'))
 sm.add_widget(MenuScreen(name='menu'))
 sm.add_widget(EncryptScreen(name='encrypt'))
 sm.add_widget(DecryptScreen(name='decrypt'))
