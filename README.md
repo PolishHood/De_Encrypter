@@ -1,2 +1,3 @@
 # De_Encrypter
-This project is in very early stage, I've finished only 2 ciphers, but final version will has much more!
+This project is in early stage, any suggestions are welcome!
+I hope you will enjoy my project :).
