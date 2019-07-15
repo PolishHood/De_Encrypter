@@ -8,6 +8,9 @@ import string
 import random
 import pycipher
 import clipboard
+from fbchat import Client
+from fbchat.models import *
+
 
 Builder.load_string("""
 <Button>:
@@ -19,6 +22,7 @@ Builder.load_string("""
     padding_y: [self.height / 2.0 - (self.line_height / 2.0) * len(self._lines), 0]
 
 <SelectingCipherScreen>:
+    on_enter: root.settingup()
     GridLayout:
         rows: 6
         Button:
@@ -38,8 +42,8 @@ Builder.load_string("""
             on_press: root.cipher_pf()
             on_press: root.manager.current = 'playfair'
         Button:
-            text: 'WIP'
-            on_press:
+            text: 'WIPlscrn'
+            on_press: root.manager.current = 'loginscrn'
         Button:
             text: 'WIP'
             on_press:
@@ -154,6 +158,40 @@ Builder.load_string("""
             on_press: root.cbutt_25()
             on_press: root.manager.current = 'keep_punct'
 
+<FBLoginScreen>:
+    on_enter: email.text = 'Enter your email'
+    on_enter: password.text = 'Enter your password'
+    GridLayout:
+        rows: 3
+        spacing: 3
+        TextInput:
+            id: email
+            on_touch_down: self.text = ''
+            multiline: False
+            write_tab: False
+        TextInput:
+            id: password
+            on_focus: self.text = ''
+            multiline: False
+            password: True
+        Button:
+            text: 'Submit'
+            on_press: root.fblog()
+            on_press: root.manager.current = 'recscrn'
+
+<RecipientScreen>:
+    GridLayout:
+        rows:2
+        TextInput:
+            font_size: 40
+            text: 'Write your recipient name and surname'
+            id: recipient
+            multiline: False
+        Button:
+            text: 'Submit'
+            on_press: root.recipientdata()
+            on_press: root.manager.current = 'menu'
+
 <KeepPunctScreen>:
     AnchorLayout:
         anchor_x: 'center'
@@ -227,7 +265,7 @@ Builder.load_string("""
 <EncryptScreen>:
     on_enter: ptext.text = 'Enter plaintext'
     GridLayout:
-        rows: 5
+        rows: 6
         TextInput:
             id: ptext
         Button:
@@ -236,6 +274,9 @@ Builder.load_string("""
         Button:
             text: 'Copy'
             on_press: root.copy()
+        Button:
+            text: 'Send'
+            on_press: root.send()
         Button:
             text: 'Back to menu'
             on_press: root.manager.current = 'menu'
@@ -246,7 +287,7 @@ Builder.load_string("""
 <DecryptScreen>:
     on_enter: dtext.text = 'Enter ciphertext'
     GridLayout:
-        rows: 5
+        rows: 6
         TextInput:
             id: dtext
         Button:
@@ -256,6 +297,9 @@ Builder.load_string("""
             text: 'Copy'
             on_press: root.copy()
         Button:
+            text: 'Send'
+            on_press: root.send()
+        Button:
             text: 'Back to menu'
             on_press: root.manager.current = 'menu'
         Button:
@@ -263,7 +307,14 @@ Builder.load_string("""
             on_press: exit()
 """)
 
+global client
+client = None
+
 class SelectingCipherScreen(Screen):
+
+    def settingup(self):
+        global client
+        client = None
 
     def cipher_c(self):
         global cipher
@@ -304,6 +355,10 @@ class CShiftScreen(Screen):
         cshift = 5
 
     def cbutt_6(self):
+        global cshift
+        cshift = 6
+
+    def cbutt_7(self):
         global cshift
         cshift = 7
 
@@ -415,7 +470,34 @@ class PlayFairKeyScreen(Screen):
 class MenuScreen(Screen):
     pass
 
+class FBLoginScreen(Screen):
+
+    def fblog(self):
+        email = self.ids.email.text
+        password = self.ids.password.text
+        global client
+        client = Client(email, password)
+
+class RecipientScreen(Screen):
+
+    def recipientdata(self):
+        recdata = self.ids.recipient.text
+        global user
+        users = client.searchForUsers(recdata)
+        user = users[0]
+        client.send(Message(text=mess), thread_id=user.uid, thread_type=ThreadType.USER)
+
 class EncryptScreen(Screen):
+
+    client = client
+
+    def send(self):
+        global mess
+        mess = self.ids.ptext.text
+        if client is None:
+            self.manager.current = 'loginscrn'
+        else:
+            self.manager.current = 'recscrn'
 
     def encryption(self, text):
         if cipher == 1:
@@ -439,6 +521,16 @@ class EncryptScreen(Screen):
         clipboard.copy(copied)
 
 class DecryptScreen(Screen):
+
+    client = client
+
+    def send(self):
+        global mess
+        mess = self.ids.dtext.text
+        if client is None:
+            self.manager.current = 'loginscrn'
+        else:
+            self.manager.current = 'recscrn'
 
     def decryption(self, text):
         if cipher == 1:
@@ -468,6 +560,8 @@ sm.add_widget(AutoKeyScreen(name='key'))
 sm.add_widget(CShiftScreen(name='cshift'))
 sm.add_widget(KeepPunctScreen(name='keep_punct'))
 sm.add_widget(PlayFairKeyScreen(name='playfair'))
+sm.add_widget(FBLoginScreen(name='loginscrn'))
+sm.add_widget(RecipientScreen(name='recscrn'))
 sm.add_widget(MenuScreen(name='menu'))
 sm.add_widget(EncryptScreen(name='encrypt'))
 sm.add_widget(DecryptScreen(name='decrypt'))
