@@ -8,6 +8,8 @@ import string
 import random
 import pycipher
 import clipboard
+import secrets
+import string
 from fbchat import Client
 from fbchat.models import *
 
@@ -43,7 +45,7 @@ Builder.load_string("""
             on_press: root.manager.current = 'playfair'
         Button:
             text: 'WIPlscrn'
-            on_press: root.manager.current = 'loginscrn'
+            on_press: root.manager.current = 'salt'
         Button:
             text: 'WIP'
             on_press:
@@ -228,6 +230,23 @@ Builder.load_string("""
             on_press: root.submit_k()
             on_press: root.manager.current = 'menu'
 
+<SaltScreen>:
+    on_enter: saltlen.text = '0'
+    on_enter: salt.text = 'Generate salt'
+    GridLayout:
+        rows: 4
+        TextInput:
+            id: saltlen
+        Button:
+            text: 'Generate salt'
+            on_press: root.gen_salt()
+        TextInput:
+            id: salt
+            text: 'Generated salt'
+        Button:
+            text: 'OK'
+            on_press: root.manager.current = 'menu'
+
 <PlayFairKeyScreen>:
     on_enter: randomkey.text = 'Generate key'
     GridLayout:
@@ -309,6 +328,9 @@ Builder.load_string("""
 
 global client
 client = None
+
+global salt
+salt = None
 
 class SelectingCipherScreen(Screen):
 
@@ -470,6 +492,19 @@ class PlayFairKeyScreen(Screen):
 class MenuScreen(Screen):
     pass
 
+class SaltScreen(Screen):
+
+    def gen_salt(self):
+        try:
+            global saltlen
+            saltlen = int(self.ids.saltlen.text)
+        except:
+            pass
+        global salt
+        salt = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(saltlen))
+        self.ids.salt.text = salt
+
+
 class FBLoginScreen(Screen):
 
     def fblog(self):
@@ -490,6 +525,7 @@ class RecipientScreen(Screen):
 class EncryptScreen(Screen):
 
     client = client
+    salt = salt
 
     def send(self):
         global mess
@@ -502,7 +538,8 @@ class EncryptScreen(Screen):
     def encryption(self, text):
         if cipher == 1:
             plaintext = self.ids.ptext.text
-            self.ids.ptext.text = pycipher.Caesar(cshift).encipher(plaintext, keep_punct=bl)
+            encryption = pycipher.Caesar(cshift).encipher(plaintext, keep_punct=bl)
+            self.ids.ptext.text = str(salt) + str(encryption)
 
         elif cipher == 2:
             plaintext = self.ids.ptext.text
@@ -535,7 +572,7 @@ class DecryptScreen(Screen):
     def decryption(self, text):
         if cipher == 1:
             ciphertext = self.ids.dtext.text
-            self.ids.dtext.text = pycipher.Caesar(cshift).decipher(ciphertext, keep_punct=bl)
+            self.ids.dtext.t = pycipher.Caesar(cshift).decipher(ciphertext, keep_punct=bl)
 
         elif cipher == 2:
             ciphertext = self.ids.dtext.text
@@ -560,6 +597,7 @@ sm.add_widget(AutoKeyScreen(name='key'))
 sm.add_widget(CShiftScreen(name='cshift'))
 sm.add_widget(KeepPunctScreen(name='keep_punct'))
 sm.add_widget(PlayFairKeyScreen(name='playfair'))
+sm.add_widget(SaltScreen(name='salt'))
 sm.add_widget(FBLoginScreen(name='loginscrn'))
 sm.add_widget(RecipientScreen(name='recscrn'))
 sm.add_widget(MenuScreen(name='menu'))
