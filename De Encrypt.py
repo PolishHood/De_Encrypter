@@ -189,6 +189,7 @@ Builder.load_string("""
             text: 'Write your recipient name and surname'
             id: recipient
             multiline: False
+            on_touch_down: self.text = ''
         Button:
             text: 'Submit'
             on_press: root.recipientdata()
